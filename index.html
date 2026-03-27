@@ -1352,6 +1352,18 @@ async function generatePost() {
     });
 
     const data = await response.json();
+    console.log('API Response:', data);
+
+    // Check for API error response
+    if (data.error) {
+      throw new Error(data.error.message || 'API returned an error');
+    }
+
+    // Check if content exists and has data
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('No content received from API. Response: ' + JSON.stringify(data));
+    }
+
     currentPost = data.content[0].text;
 
     document.getElementById('postEdit').value = currentPost;
@@ -1359,6 +1371,7 @@ async function generatePost() {
     updateCharCnt();
 
   } catch (error) {
+    console.error('Error generating post:', error);
     alert('Error generating post: ' + error.message);
   }
 
@@ -1394,10 +1407,23 @@ async function rewritePost() {
     });
 
     const data = await response.json();
+    console.log('API Response:', data);
+
+    // Check for API error response
+    if (data.error) {
+      throw new Error(data.error.message || 'API returned an error');
+    }
+
+    // Check if content exists and has data
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('No content received from API. Response: ' + JSON.stringify(data));
+    }
+
     document.getElementById('postEdit').value = data.content[0].text;
     updateCharCnt();
 
   } catch (error) {
+    console.error('Error rewriting post:', error);
     alert('Error rewriting post: ' + error.message);
   }
 }
@@ -1815,6 +1841,18 @@ async function doResearch() {
     });
 
     const data = await response.json();
+    console.log('API Response:', data);
+
+    // Check for API error response
+    if (data.error) {
+      throw new Error(data.error.message || 'API returned an error');
+    }
+
+    // Check if content exists and has data
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('No content received from API. Response: ' + JSON.stringify(data));
+    }
+
     const text = data.content[0].text;
 
     results.innerHTML = `
@@ -1826,6 +1864,7 @@ async function doResearch() {
     `;
 
   } catch (error) {
+    console.error('Error in doResearch:', error);
     results.innerHTML = `<div class="card" style="margin-top:16px;"><p style="color:var(--red);">Error: ${error.message}</p></div>`;
   }
 
@@ -1877,6 +1916,18 @@ async function fetchTrends() {
     });
 
     const data = await response.json();
+    console.log('API Response:', data);
+
+    // Check for API error response
+    if (data.error) {
+      throw new Error(data.error.message || 'API returned an error');
+    }
+
+    // Check if content exists and has data
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('No content received from API. Response: ' + JSON.stringify(data));
+    }
+
     const text = data.content[0].text;
 
     results.innerHTML = `
@@ -1887,6 +1938,7 @@ async function fetchTrends() {
     `;
 
   } catch (error) {
+    console.error('Error in fetchTrends:', error);
     results.innerHTML = `<div class="card" style="margin-top:16px;"><p style="color:var(--red);">Error: ${error.message}</p></div>`;
   }
 
@@ -1928,6 +1980,18 @@ async function fetchNews() {
     });
 
     const data = await response.json();
+    console.log('API Response:', data);
+
+    // Check for API error response
+    if (data.error) {
+      throw new Error(data.error.message || 'API returned an error');
+    }
+
+    // Check if content exists and has data
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('No content received from API. Response: ' + JSON.stringify(data));
+    }
+
     const text = data.content[0].text;
 
     results.innerHTML = `
@@ -1938,6 +2002,7 @@ async function fetchNews() {
     `;
 
   } catch (error) {
+    console.error('Error in fetchNews:', error);
     results.innerHTML = `<div class="card" style="margin-top:16px;"><p style="color:var(--red);">Error: ${error.message}</p></div>`;
   }
 
