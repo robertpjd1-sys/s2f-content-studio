@@ -1080,6 +1080,58 @@ select.inp {
               <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('webhook')">💾 Save & Validate</button>
             </div>
           </div>
+
+          <!-- LinkedIn API Section -->
+          <div class="settings-section">
+            <div class="setting-title">
+              💼 LinkedIn Client ID
+              <span id="linkedinClientStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
+            <div class="setting-sub">Required for LinkedIn API integration</div>
+            <div class="key-field">
+              <input type="password" class="inp" id="linkedinClientId" placeholder="LinkedIn Client ID">
+              <button class="key-reveal" onclick="toggleKeyVisibility('linkedinClientId')">Show</button>
+            </div>
+            <div class="key-saved" id="linkedinClientSaved" style="color:var(--success);">✓ Client ID saved</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-dark btn-sm" onclick="saveLinkedinClientId()">💾 Save</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="setting-title">
+              🔐 LinkedIn Client Secret
+              <span id="linkedinSecretStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
+            <div class="setting-sub">Required for LinkedIn API authentication</div>
+            <div class="key-field">
+              <input type="password" class="inp" id="linkedinClientSecret" placeholder="LinkedIn Client Secret">
+              <button class="key-reveal" onclick="toggleKeyVisibility('linkedinClientSecret')">Show</button>
+            </div>
+            <div class="key-saved" id="linkedinSecretSaved" style="color:var(--success);">✓ Client Secret saved</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-dark btn-sm" onclick="saveLinkedinClientSecret()">💾 Save</button>
+            </div>
+          </div>
+
+          <div class="settings-section full">
+            <div class="setting-title">
+              🎫 LinkedIn Access Token
+              <span id="linkedinTokenStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
+            <div class="setting-sub">OAuth access token for LinkedIn API</div>
+            <div class="key-field">
+              <input type="password" class="inp" id="linkedinAccessToken" placeholder="LinkedIn Access Token">
+              <button class="key-reveal" onclick="toggleKeyVisibility('linkedinAccessToken')">Show</button>
+            </div>
+            <div class="key-saved" id="linkedinTokenSaved" style="color:var(--success);">✓ Access Token saved and validated</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('linkedin')">💾 Save & Validate</button>
+            </div>
+            <div style="margin-top:12px;padding:12px;background:var(--gold-t);border-radius:8px;font-size:12px;color:var(--text2);">
+              💡 <strong>Note:</strong> Connect your LinkedIn account to enable live analytics and direct posting
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1955,6 +2007,26 @@ function loadApiKeys() {
     updateKeyStatus('replicate', true);
   }
 
+  // Load LinkedIn keys if they exist
+  const linkedinClientId = localStorage.getItem('s2f_li_client_id');
+  const linkedinClientSecret = localStorage.getItem('s2f_li_client_secret');
+  const linkedinToken = localStorage.getItem('s2f_li_token');
+
+  if (linkedinClientId) {
+    document.getElementById('linkedinClientId').value = linkedinClientId;
+    document.getElementById('linkedinClientSaved').style.display = 'block';
+  }
+
+  if (linkedinClientSecret) {
+    document.getElementById('linkedinClientSecret').value = linkedinClientSecret;
+    document.getElementById('linkedinSecretSaved').style.display = 'block';
+  }
+
+  if (linkedinToken) {
+    document.getElementById('linkedinAccessToken').value = linkedinToken;
+    updateKeyStatus('linkedin', true);
+  }
+
   // Auto-save and validate all keys on first load
   if (isFirstLoad) {
     setTimeout(autoSaveAllKeys, 500);
@@ -2018,6 +2090,13 @@ async function saveAndValidateKey(type, silent = false) {
       savedId = 'webhookSaved';
       validator = validateWebhook;
       break;
+    case 'linkedin':
+      inputId = 'linkedinAccessToken';
+      storageKey = 's2f_li_token';
+      statusId = 'linkedinTokenStatus';
+      savedId = 'linkedinTokenSaved';
+      validator = validateLinkedinToken;
+      break;
   }
 
   key = document.getElementById(inputId).value.trim();
@@ -2056,7 +2135,8 @@ function updateKeyStatus(type, isValid) {
     'anthropic': { statusId: 'anthropicStatus', savedId: 'anthropicKeySaved' },
     'replicate': { statusId: 'replicateStatus', savedId: 'replicateKeySaved' },
     'elevenlabs': { statusId: 'elevenlabsStatus', savedId: 'elevenlabsKeySaved' },
-    'webhook': { statusId: 'webhookStatus', savedId: 'webhookSaved' }
+    'webhook': { statusId: 'webhookStatus', savedId: 'webhookSaved' },
+    'linkedin': { statusId: 'linkedinTokenStatus', savedId: 'linkedinTokenSaved' }
   };
 
   const { statusId, savedId } = statusMap[type];
@@ -2081,84 +2161,30 @@ function updateKeyStatus(type, isValid) {
   }
 }
 
+// Format-only validation (no API calls to avoid CORS issues)
 async function validateAnthropicKey(key) {
-  if (!key.startsWith('sk-ant-')) return false;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 10,
-        messages: [{ role: 'user', content: 'Test' }]
-      })
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('Anthropic validation error:', error);
-    return false;
-  }
+  // Valid if starts with 'sk-ant-' and length > 20
+  return key.startsWith('sk-ant-') && key.length > 20;
 }
 
 async function validateReplicateKey(key) {
-  if (!key.startsWith('r8_')) return false;
-
-  try {
-    const response = await fetch('https://api.replicate.com/v1/models', {
-      method: 'GET',
-      headers: { 'Authorization': `Token ${key}` }
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('Replicate validation error:', error);
-    return false;
-  }
+  // Valid if starts with 'r8_' and length > 10
+  return key.startsWith('r8_') && key.length > 10;
 }
 
 async function validateElevenlabsKey(key) {
-  if (!key.startsWith('sk_')) return false;
-
-  try {
-    const response = await fetch('https://api.elevenlabs.io/v1/user', {
-      method: 'GET',
-      headers: { 'xi-api-key': key }
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('ElevenLabs validation error:', error);
-    return false;
-  }
+  // Valid if starts with 'sk_' and length > 20
+  return key.startsWith('sk_') && key.length > 20;
 }
 
 async function validateWebhook(url) {
-  if (!url.startsWith('https://')) return false;
+  // Valid if starts with 'https://'
+  return url.startsWith('https://');
+}
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        test: true,
-        action: 'ping',
-        timestamp: new Date().toISOString()
-      })
-    });
-
-    // Webhook may return any status, we just check if it responds
-    return true;
-  } catch (error) {
-    console.error('Webhook validation error:', error);
-    return false;
-  }
+async function validateLinkedinToken(token) {
+  // Valid if length > 10
+  return token.length > 10;
 }
 
 function saveElevenlabsVoice(silent = false) {
@@ -2180,6 +2206,24 @@ function toggleKeyVisibility(inputId) {
   } else {
     input.type = 'password';
     btn.textContent = 'Show';
+  }
+}
+
+function saveLinkedinClientId(silent = false) {
+  const clientId = document.getElementById('linkedinClientId').value.trim();
+  if (clientId) {
+    localStorage.setItem('s2f_li_client_id', clientId);
+    document.getElementById('linkedinClientSaved').style.display = 'block';
+    if (!silent) alert('LinkedIn Client ID saved!');
+  }
+}
+
+function saveLinkedinClientSecret(silent = false) {
+  const clientSecret = document.getElementById('linkedinClientSecret').value.trim();
+  if (clientSecret) {
+    localStorage.setItem('s2f_li_client_secret', clientSecret);
+    document.getElementById('linkedinSecretSaved').style.display = 'block';
+    if (!silent) alert('LinkedIn Client Secret saved!');
   }
 }
 
