@@ -1001,42 +1001,83 @@ select.inp {
         <div class="settings-grid">
           <!-- Anthropic API Key -->
           <div class="settings-section">
-            <div class="setting-title">🤖 Anthropic API Key</div>
+            <div class="setting-title">
+              🤖 Anthropic API Key
+              <span id="anthropicStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
             <div class="setting-sub">Required for AI content generation</div>
             <div class="key-field">
               <input type="password" class="inp" id="anthropicKey" placeholder="sk-ant-...">
               <button class="key-reveal" onclick="toggleKeyVisibility('anthropicKey')">Show</button>
             </div>
-            <div class="key-saved" id="anthropicKeySaved">✓ Key saved</div>
+            <div class="key-saved" id="anthropicKeySaved" style="color:var(--success);">✓ Key saved and validated</div>
             <div style="display:flex;gap:8px;margin-top:10px;">
-              <button class="btn btn-dark btn-sm" onclick="saveAnthropicKey()">💾 Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="checkAnthropicKey()">✓ Test</button>
+              <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('anthropic')">💾 Save & Validate</button>
             </div>
           </div>
 
           <!-- Replicate API Key -->
           <div class="settings-section">
-            <div class="setting-title">🎨 Replicate API Key</div>
+            <div class="setting-title">
+              🎨 Replicate API Key
+              <span id="replicateStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
             <div class="setting-sub">Required for image generation</div>
             <div class="key-field">
               <input type="password" class="inp" id="replicateKey" placeholder="r8_...">
               <button class="key-reveal" onclick="toggleKeyVisibility('replicateKey')">Show</button>
             </div>
-            <div class="key-saved" id="replicateKeySaved">✓ Key saved</div>
+            <div class="key-saved" id="replicateKeySaved" style="color:var(--success);">✓ Key saved and validated</div>
             <div style="display:flex;gap:8px;margin-top:10px;">
-              <button class="btn btn-dark btn-sm" onclick="saveReplicateKey()">💾 Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="checkReplicateKey()">✓ Test</button>
+              <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('replicate')">💾 Save & Validate</button>
+            </div>
+          </div>
+
+          <!-- ElevenLabs API Key -->
+          <div class="settings-section">
+            <div class="setting-title">
+              🎙️ ElevenLabs API Key
+              <span id="elevenlabsStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
+            <div class="setting-sub">Required for voice briefing generation</div>
+            <div class="key-field">
+              <input type="password" class="inp" id="elevenlabsKey" placeholder="sk_...">
+              <button class="key-reveal" onclick="toggleKeyVisibility('elevenlabsKey')">Show</button>
+            </div>
+            <div class="key-saved" id="elevenlabsKeySaved" style="color:var(--success);">✓ Key saved and validated</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('elevenlabs')">💾 Save & Validate</button>
+            </div>
+          </div>
+
+          <!-- ElevenLabs Voice ID -->
+          <div class="settings-section">
+            <div class="setting-title">🗣️ ElevenLabs Voice ID</div>
+            <div class="setting-sub">Voice ID for audio generation</div>
+            <div class="key-field">
+              <input type="password" class="inp" id="elevenlabsVoice" placeholder="Voice ID">
+              <button class="key-reveal" onclick="toggleKeyVisibility('elevenlabsVoice')">Show</button>
+            </div>
+            <div class="key-saved" id="elevenlabsVoiceSaved" style="color:var(--success);">✓ Voice ID saved</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-dark btn-sm" onclick="saveElevenlabsVoice()">💾 Save</button>
             </div>
           </div>
 
           <!-- n8n Webhook -->
           <div class="settings-section full">
-            <div class="setting-title">📤 n8n Webhook URL</div>
+            <div class="setting-title">
+              📤 n8n Webhook URL
+              <span id="webhookStatus" style="font-size:16px;margin-left:8px;display:none;"></span>
+            </div>
             <div class="setting-sub">Webhook endpoint for publishing posts</div>
-            <input type="text" class="inp" id="webhookUrl" placeholder="https://...webhook/...">
+            <div class="key-field">
+              <input type="password" class="inp" id="webhookUrl" placeholder="https://...webhook/...">
+              <button class="key-reveal" onclick="toggleKeyVisibility('webhookUrl')">Show</button>
+            </div>
+            <div class="key-saved" id="webhookSaved" style="color:var(--success);">✓ Webhook saved and validated</div>
             <div style="display:flex;gap:8px;margin-top:10px;">
-              <button class="btn btn-dark btn-sm" onclick="saveWebhook()">💾 Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="checkWebhook()">✓ Test</button>
+              <button class="btn btn-dark btn-sm" onclick="saveAndValidateKey('webhook')">💾 Save & Validate</button>
             </div>
           </div>
         </div>
@@ -1856,59 +1897,176 @@ async function fetchNews() {
 // SETTINGS
 // ============================================================================
 
+// Pre-defined API keys
+const PREDEFINED_KEYS = {
+  elevenlabs: 'sk_f687f0f44c8d319425da7790a9e19c79c9702694ae31be1e',
+  elevenlabsVoice: 'MzqUf1HbJ8UmQ0wUsx2p',
+  webhook: 'https://robertpjd1.app.n8n.cloud/webhook/s2f-post'
+};
+
 function loadApiKeys() {
+  // Load from localStorage
   const antKey = localStorage.getItem('s2f_ant_key');
   const repKey = localStorage.getItem('s2f_rep_key');
+  const elevenlabsKey = localStorage.getItem('s2f_elevenlabs_key');
+  const elevenlabsVoice = localStorage.getItem('s2f_elevenlabs_voice');
   const webhook = localStorage.getItem('s2f_webhook');
 
+  // Check if this is first load (no keys saved yet)
+  const isFirstLoad = !antKey && !repKey && !elevenlabsKey && !webhook;
+
+  // Pre-populate ElevenLabs and webhook with predefined values
+  if (!elevenlabsKey) {
+    document.getElementById('elevenlabsKey').value = PREDEFINED_KEYS.elevenlabs;
+  } else {
+    document.getElementById('elevenlabsKey').value = elevenlabsKey;
+    updateKeyStatus('elevenlabs', true);
+  }
+
+  if (!elevenlabsVoice) {
+    document.getElementById('elevenlabsVoice').value = PREDEFINED_KEYS.elevenlabsVoice;
+  } else {
+    document.getElementById('elevenlabsVoice').value = elevenlabsVoice;
+    document.getElementById('elevenlabsVoiceSaved').style.display = 'block';
+  }
+
+  if (!webhook) {
+    document.getElementById('webhookUrl').value = PREDEFINED_KEYS.webhook;
+  } else {
+    document.getElementById('webhookUrl').value = webhook;
+    updateKeyStatus('webhook', true);
+  }
+
+  // Load Anthropic and Replicate keys if they exist
   if (antKey) {
     document.getElementById('anthropicKey').value = antKey;
-    document.getElementById('anthropicKeySaved').style.display = 'block';
+    updateKeyStatus('anthropic', true);
   }
 
   if (repKey) {
     document.getElementById('replicateKey').value = repKey;
-    document.getElementById('replicateKeySaved').style.display = 'block';
+    updateKeyStatus('replicate', true);
   }
 
-  if (webhook) {
-    document.getElementById('webhookUrl').value = webhook;
+  // Auto-save and validate all keys on first load
+  if (isFirstLoad) {
+    setTimeout(autoSaveAllKeys, 500);
   }
 }
 
-function saveAnthropicKey() {
-  const key = document.getElementById('anthropicKey').value.trim();
-  if (key && key.startsWith('sk-ant-')) {
-    localStorage.setItem('s2f_ant_key', key);
-    document.getElementById('anthropicKeySaved').style.display = 'block';
-    alert('API key saved!');
+async function autoSaveAllKeys() {
+  console.log('Auto-saving API keys on first load...');
+
+  // Save and validate ElevenLabs
+  await saveAndValidateKey('elevenlabs', true);
+
+  // Save ElevenLabs Voice ID (no validation needed)
+  saveElevenlabsVoice(true);
+
+  // Save and validate webhook
+  await saveAndValidateKey('webhook', true);
+
+  // Note: Anthropic and Replicate keys need to be entered by user
+  console.log('Auto-save complete!');
+}
+
+async function saveAndValidateKey(type, silent = false) {
+  let key, storageKey, inputId, statusId, savedId, validator;
+
+  switch(type) {
+    case 'anthropic':
+      inputId = 'anthropicKey';
+      storageKey = 's2f_ant_key';
+      statusId = 'anthropicStatus';
+      savedId = 'anthropicKeySaved';
+      validator = validateAnthropicKey;
+      break;
+    case 'replicate':
+      inputId = 'replicateKey';
+      storageKey = 's2f_rep_key';
+      statusId = 'replicateStatus';
+      savedId = 'replicateKeySaved';
+      validator = validateReplicateKey;
+      break;
+    case 'elevenlabs':
+      inputId = 'elevenlabsKey';
+      storageKey = 's2f_elevenlabs_key';
+      statusId = 'elevenlabsStatus';
+      savedId = 'elevenlabsKeySaved';
+      validator = validateElevenlabsKey;
+      break;
+    case 'webhook':
+      inputId = 'webhookUrl';
+      storageKey = 's2f_webhook';
+      statusId = 'webhookStatus';
+      savedId = 'webhookSaved';
+      validator = validateWebhook;
+      break;
+  }
+
+  key = document.getElementById(inputId).value.trim();
+
+  if (!key) {
+    if (!silent) alert('Please enter a key/URL');
+    return;
+  }
+
+  // Show validating status
+  updateKeyStatus(type, null);
+
+  try {
+    const isValid = await validator(key);
+
+    if (isValid) {
+      // Save to localStorage
+      localStorage.setItem(storageKey, key);
+
+      // Update UI
+      updateKeyStatus(type, true);
+
+      if (!silent) alert(`✓ ${type.charAt(0).toUpperCase() + type.slice(1)} key validated and saved!`);
+    } else {
+      updateKeyStatus(type, false);
+      if (!silent) alert(`✗ ${type.charAt(0).toUpperCase() + type.slice(1)} key validation failed`);
+    }
+  } catch (error) {
+    updateKeyStatus(type, false);
+    if (!silent) alert(`Error: ${error.message}`);
+  }
+}
+
+function updateKeyStatus(type, isValid) {
+  const statusMap = {
+    'anthropic': { statusId: 'anthropicStatus', savedId: 'anthropicKeySaved' },
+    'replicate': { statusId: 'replicateStatus', savedId: 'replicateKeySaved' },
+    'elevenlabs': { statusId: 'elevenlabsStatus', savedId: 'elevenlabsKeySaved' },
+    'webhook': { statusId: 'webhookStatus', savedId: 'webhookSaved' }
+  };
+
+  const { statusId, savedId } = statusMap[type];
+  const statusEl = document.getElementById(statusId);
+  const savedEl = document.getElementById(savedId);
+
+  if (isValid === null) {
+    // Validating
+    statusEl.textContent = '⏳';
+    statusEl.style.display = 'inline';
+    savedEl.style.display = 'none';
+  } else if (isValid) {
+    // Valid
+    statusEl.textContent = '✅';
+    statusEl.style.display = 'inline';
+    savedEl.style.display = 'block';
   } else {
-    alert('Invalid API key format');
+    // Invalid
+    statusEl.textContent = '❌';
+    statusEl.style.display = 'inline';
+    savedEl.style.display = 'none';
   }
 }
 
-function saveReplicateKey() {
-  const key = document.getElementById('replicateKey').value.trim();
-  if (key && key.startsWith('r8_')) {
-    localStorage.setItem('s2f_rep_key', key);
-    document.getElementById('replicateKeySaved').style.display = 'block';
-    alert('API key saved!');
-  } else {
-    alert('Invalid API key format');
-  }
-}
-
-function saveWebhook() {
-  const url = document.getElementById('webhookUrl').value.trim();
-  if (url) {
-    localStorage.setItem('s2f_webhook', url);
-    alert('Webhook URL saved!');
-  }
-}
-
-async function checkAnthropicKey() {
-  const key = document.getElementById('anthropicKey').value.trim();
-  if (!key) return;
+async function validateAnthropicKey(key) {
+  if (!key.startsWith('sk-ant-')) return false;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1926,50 +2084,73 @@ async function checkAnthropicKey() {
       })
     });
 
-    if (response.ok) {
-      alert('✓ API key is valid!');
-    } else {
-      alert('✗ API key is invalid');
-    }
+    return response.ok;
   } catch (error) {
-    alert('Error testing key: ' + error.message);
+    console.error('Anthropic validation error:', error);
+    return false;
   }
 }
 
-async function checkReplicateKey() {
-  const key = document.getElementById('replicateKey').value.trim();
-  if (!key) return;
+async function validateReplicateKey(key) {
+  if (!key.startsWith('r8_')) return false;
 
   try {
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
+    const response = await fetch('https://api.replicate.com/v1/models', {
       method: 'GET',
       headers: { 'Authorization': `Token ${key}` }
     });
 
-    if (response.ok) {
-      alert('✓ API key is valid!');
-    } else {
-      alert('✗ API key is invalid');
-    }
+    return response.ok;
   } catch (error) {
-    alert('Error testing key: ' + error.message);
+    console.error('Replicate validation error:', error);
+    return false;
   }
 }
 
-async function checkWebhook() {
-  const url = document.getElementById('webhookUrl').value.trim();
-  if (!url) return;
+async function validateElevenlabsKey(key) {
+  if (!key.startsWith('sk_')) return false;
+
+  try {
+    const response = await fetch('https://api.elevenlabs.io/v1/user', {
+      method: 'GET',
+      headers: { 'xi-api-key': key }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('ElevenLabs validation error:', error);
+    return false;
+  }
+}
+
+async function validateWebhook(url) {
+  if (!url.startsWith('https://')) return false;
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: true, timestamp: new Date().toISOString() })
+      body: JSON.stringify({
+        test: true,
+        action: 'ping',
+        timestamp: new Date().toISOString()
+      })
     });
 
-    alert('✓ Webhook test sent!');
+    // Webhook may return any status, we just check if it responds
+    return true;
   } catch (error) {
-    alert('Error testing webhook: ' + error.message);
+    console.error('Webhook validation error:', error);
+    return false;
+  }
+}
+
+function saveElevenlabsVoice(silent = false) {
+  const voiceId = document.getElementById('elevenlabsVoice').value.trim();
+  if (voiceId) {
+    localStorage.setItem('s2f_elevenlabs_voice', voiceId);
+    document.getElementById('elevenlabsVoiceSaved').style.display = 'block';
+    if (!silent) alert('Voice ID saved!');
   }
 }
 
