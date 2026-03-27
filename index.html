@@ -1899,6 +1899,8 @@ async function fetchNews() {
 
 // Pre-defined API keys
 const PREDEFINED_KEYS = {
+  anthropic: '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',
+  replicate: 'r8_DRx8pbkrjhInwyr5ovFMjEQIBIG7jWg0ieCpd',
   elevenlabs: 'sk_f687f0f44c8d319425da7790a9e19c79c9702694ae31be1e',
   elevenlabsVoice: 'MzqUf1HbJ8UmQ0wUsx2p',
   webhook: 'https://robertpjd1.app.n8n.cloud/webhook/s2f-post'
@@ -1937,13 +1939,18 @@ function loadApiKeys() {
     updateKeyStatus('webhook', true);
   }
 
-  // Load Anthropic and Replicate keys if they exist
-  if (antKey) {
+  // Pre-populate Anthropic key if not in localStorage
+  if (!antKey && PREDEFINED_KEYS.anthropic) {
+    document.getElementById('anthropicKey').value = PREDEFINED_KEYS.anthropic;
+  } else if (antKey) {
     document.getElementById('anthropicKey').value = antKey;
     updateKeyStatus('anthropic', true);
   }
 
-  if (repKey) {
+  // Pre-populate Replicate key if available and not in localStorage
+  if (!repKey && PREDEFINED_KEYS.replicate) {
+    document.getElementById('replicateKey').value = PREDEFINED_KEYS.replicate;
+  } else if (repKey) {
     document.getElementById('replicateKey').value = repKey;
     updateKeyStatus('replicate', true);
   }
@@ -1957,6 +1964,16 @@ function loadApiKeys() {
 async function autoSaveAllKeys() {
   console.log('Auto-saving API keys on first load...');
 
+  // Save and validate Anthropic key
+  if (PREDEFINED_KEYS.anthropic) {
+    await saveAndValidateKey('anthropic', true);
+  }
+
+  // Save and validate Replicate key (if available)
+  if (PREDEFINED_KEYS.replicate) {
+    await saveAndValidateKey('replicate', true);
+  }
+
   // Save and validate ElevenLabs
   await saveAndValidateKey('elevenlabs', true);
 
@@ -1966,8 +1983,7 @@ async function autoSaveAllKeys() {
   // Save and validate webhook
   await saveAndValidateKey('webhook', true);
 
-  // Note: Anthropic and Replicate keys need to be entered by user
-  console.log('Auto-save complete!');
+  console.log('Auto-save complete! All keys validated and saved to localStorage.');
 }
 
 async function saveAndValidateKey(type, silent = false) {
